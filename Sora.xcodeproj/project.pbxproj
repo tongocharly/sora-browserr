@@ -1,0 +1,211 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+		272D76900395457EBE945069 = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "folder";
+			"name" = "Sources Zen";
+			"path" = "src";
+			"sourceTree" = "<group>";
+		};
+		836C77715F0D4954A5C6C5F4 = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "folder";
+			"name" = "Moteur Gecko";
+			"path" = "engine";
+			"sourceTree" = "<group>";
+		};
+		5F13CBC8E43E4794A6F54C73 = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "folder";
+			"name" = "Configuration et icône";
+			"path" = "configs";
+			"sourceTree" = "<group>";
+		};
+		07A752DB832343BF9C7F030D = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "folder";
+			"name" = "Préférences";
+			"path" = "prefs";
+			"sourceTree" = "<group>";
+		};
+		8E0EB11FFB5743578F65C743 = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "folder";
+			"name" = "Traductions";
+			"path" = "locales";
+			"sourceTree" = "<group>";
+		};
+		76B4D85022AC49148D7B8CA1 = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "folder";
+			"name" = "Compilation";
+			"path" = "scripts";
+			"sourceTree" = "<group>";
+		};
+		89CC3170A68D4F17A6969174 = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.markdown";
+			"name" = "Sora — compilation";
+			"path" = "SORA.md";
+			"sourceTree" = "<group>";
+		};
+		6AB7C308900E49ADBE9D71AB = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.json";
+			"name" = "Identité Sora";
+			"path" = "surfer.json";
+			"sourceTree" = "<group>";
+		};
+		4F6FF1F6945843E2A3F04167 = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.json";
+			"name" = "Dépendances";
+			"path" = "package.json";
+			"sourceTree" = "<group>";
+		};
+		F579E8FEE4CA472687C3E76D = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text";
+			"name" = "Licence MPL-2.0";
+			"path" = "LICENSE";
+			"sourceTree" = "<group>";
+		};
+		ED8743FC8F954F8CAF94439F = {
+			"isa" = "PBXGroup";
+			"children" = ( 272D76900395457EBE945069, 836C77715F0D4954A5C6C5F4, 5F13CBC8E43E4794A6F54C73, 07A752DB832343BF9C7F030D, 8E0EB11FFB5743578F65C743, 76B4D85022AC49148D7B8CA1, 89CC3170A68D4F17A6969174, 6AB7C308900E49ADBE9D71AB, 4F6FF1F6945843E2A3F04167, F579E8FEE4CA472687C3E76D, 5BE58B2B29A44E5EB4CAD702, );
+			"sourceTree" = "<group>";
+		};
+		5BE58B2B29A44E5EB4CAD702 = {
+			"isa" = "PBXGroup";
+			"children" = (  );
+			"name" = "Products";
+			"sourceTree" = "<group>";
+		};
+		9252E1A0F9664DA18AC55E53 = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"SDKROOT" = "macosx";
+				"MACOSX_DEPLOYMENT_TARGET" = "15.0";
+				"CODE_SIGNING_ALLOWED" = "NO";
+			};
+			"name" = "Debug";
+		};
+		3C9A6C7FECA3466DB6E5A60A = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"SDKROOT" = "macosx";
+				"MACOSX_DEPLOYMENT_TARGET" = "15.0";
+				"CODE_SIGNING_ALLOWED" = "NO";
+			};
+			"name" = "Release";
+		};
+		F86F81527138489991E848C2 = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = ( 9252E1A0F9664DA18AC55E53, 3C9A6C7FECA3466DB6E5A60A, );
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+		};
+		E67BF3D2271846CDB8453881 = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"SDKROOT" = "macosx";
+				"MACOSX_DEPLOYMENT_TARGET" = "15.0";
+				"CODE_SIGNING_ALLOWED" = "NO";
+				"SORA_ARCH" = "aarch64";
+				"SORA_BUILD_JOBS" = "6";
+			};
+			"name" = "Debug";
+		};
+		6DE8BAD880CC4DAB8A392A57 = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"SDKROOT" = "macosx";
+				"MACOSX_DEPLOYMENT_TARGET" = "15.0";
+				"CODE_SIGNING_ALLOWED" = "NO";
+				"SORA_ARCH" = "aarch64";
+				"SORA_BUILD_JOBS" = "6";
+			};
+			"name" = "Release";
+		};
+		C5968C6FE2904EB085AB4C88 = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = ( E67BF3D2271846CDB8453881, 6DE8BAD880CC4DAB8A392A57, );
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+		};
+		393B99DC7E6C4AC4BC2D1CC4 = {
+			"isa" = "PBXLegacyTarget";
+			"buildArgumentsString" = "\"$(SRCROOT)/scripts/sora-xcode.sh\" \"$(SORA_ARCH)\" \"$(ACTION)\"";
+			"buildConfigurationList" = C5968C6FE2904EB085AB4C88;
+			"buildPhases" = (  );
+			"buildToolPath" = "/bin/bash";
+			"buildWorkingDirectory" = "$(SRCROOT)";
+			"dependencies" = (  );
+			"name" = "Sora — Apple Silicon";
+			"passBuildSettingsInEnvironment" = "1";
+			"productName" = "Sora";
+		};
+		29B059ECF4F04D31B287FE65 = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"SDKROOT" = "macosx";
+				"MACOSX_DEPLOYMENT_TARGET" = "15.0";
+				"CODE_SIGNING_ALLOWED" = "NO";
+				"SORA_ARCH" = "x86_64";
+				"SORA_BUILD_JOBS" = "6";
+			};
+			"name" = "Debug";
+		};
+		279451EA95E84B2A8A2CAEF9 = {
+			"isa" = "XCBuildConfiguration";
+			"buildSettings" = {
+				"SDKROOT" = "macosx";
+				"MACOSX_DEPLOYMENT_TARGET" = "15.0";
+				"CODE_SIGNING_ALLOWED" = "NO";
+				"SORA_ARCH" = "x86_64";
+				"SORA_BUILD_JOBS" = "6";
+			};
+			"name" = "Release";
+		};
+		DF8D0B19A9984A03970610F9 = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = ( 29B059ECF4F04D31B287FE65, 279451EA95E84B2A8A2CAEF9, );
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+		};
+		CDB79BD563A044AFB366D070 = {
+			"isa" = "PBXLegacyTarget";
+			"buildArgumentsString" = "\"$(SRCROOT)/scripts/sora-xcode.sh\" \"$(SORA_ARCH)\" \"$(ACTION)\"";
+			"buildConfigurationList" = DF8D0B19A9984A03970610F9;
+			"buildPhases" = (  );
+			"buildToolPath" = "/bin/bash";
+			"buildWorkingDirectory" = "$(SRCROOT)";
+			"dependencies" = (  );
+			"name" = "Sora — Intel";
+			"passBuildSettingsInEnvironment" = "1";
+			"productName" = "Sora";
+		};
+		232F6BAC31C94D97841E0C08 = {
+			"isa" = "PBXProject";
+			"attributes" = {
+				"LastUpgradeCheck" = "2660";
+				"BuildIndependentTargetsInParallel" = "NO";
+			};
+			"buildConfigurationList" = F86F81527138489991E848C2;
+			"compatibilityVersion" = "Xcode 14.0";
+			"developmentRegion" = "fr";
+			"hasScannedForEncodings" = "0";
+			"knownRegions" = ( "fr", "en", );
+			"mainGroup" = ED8743FC8F954F8CAF94439F;
+			"productRefGroup" = 5BE58B2B29A44E5EB4CAD702;
+			"projectDirPath" = "";
+			"projectRoot" = "";
+			"targets" = ( 393B99DC7E6C4AC4BC2D1CC4, CDB79BD563A044AFB366D070, );
+		};
+	};
+	rootObject = 232F6BAC31C94D97841E0C08;
+}
