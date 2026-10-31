@@ -3,3 +3,4 @@
 # Sora
 Sora THE Browser to replace Arc
 (In development)
+<a href="https://github.com/tongocharly/sora-browserr/releases/tag/v0.2.9">Download</a> ·
