@@ -1,1 +1,31 @@
+# Nouveautés de Sora
 
+## 0.3.0 — Bêta
+
+- Traduction locale et progressive dans la page, sans bandeau.
+- Commande de traduction au clic droit et langue au choix dans le menu du site.
+- Poursuite de la traduction sur les pages du même site pendant la session.
+- Suppression des demandes automatiques et de l’ancienne interface de traduction.
+- Français par défaut ; réglage dans Sites ; choix privés isolés et temporaires.
+- Lecteur aligné sur les onglets, fond discret sans ombre au repos, déploiement blanc au survol ou au clavier.
+- Correction du débordement du bouton de fermeture et défilement lent des titres longs.
+- Confirmation de copie : l’icône du lien devient une coche puis revient après trois secondes.
+- Infobulles compactes teintées, coins arrondis et ombre légère ; correction des disparitions lors du passage entre les éléments d’un onglet.
+- Le mini lecteur est réservé à la musique. Les vidéos visibles passent par le lecteur flottant natif, déplaçable et redimensionnable, lors d’un changement d’onglet.
+- Le mini lecteur est masqué pendant la création d’un espace.
+- Présentation GitHub et capture de Sora dans le README.
+
+Nouvelle release distincte, avec mise à jour signée pour Intel et Apple Silicon.
+
+## 0.2.9.1 — Bêta
+
+- Logo complet Sora dans les réglages, adapté aux thèmes clair et sombre.
+- Première mise à jour proposée en ligne aux installations Sora 0.2.9.
+
+## 0.2.9 — Bêta
+
+- Interface en français et en anglais.
+- Recherche et installation des mises à jour propres à Sora via GitHub Releases.
+- Commandes de recherche `/` et barre latérale réduite.
+
+Ces versions de test sont signées Apple Development et ne sont pas notariées.
