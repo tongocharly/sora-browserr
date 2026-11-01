@@ -18,6 +18,8 @@ Un navigateur pour macOS, construit sur Zen et Gecko, avec des espaces pour orga
 
 ## Sora 0.3
 
+Le correctif **0.3.0.1** place les commandes `/` après la loupe et corrige les icônes et l’espacement du menu de traduction.
+
 - **Traduction dans la page — Bêta.** Clic droit → « Traduire la page en français », ou ouverture des paramètres du site à côté de Copier l’adresse. La langue se choisit dans ce même menu. Les pages suivantes du site restent traduites pendant la session, sans bandeau ni demandes automatiques. Le texte est traité sur le Mac ; les modèles linguistiques sont téléchargés au premier usage.
 - **Mini lecteur musical.** Aligné sur les onglets, il se fond dans la barre latérale au repos et se déploie sur fond blanc au survol ou au clavier. Les titres trop longs défilent lentement et les notes musicales animées sont conservées.
 - **Onglets et espaces.** Dossiers, onglets épinglés, barre latérale réduite, aperçu des liens, vue partagée, commandes `/` et extensions compatibles avec Gecko.
@@ -36,7 +38,7 @@ Pour une première installation, l’installateur macOS de [Sora 0.2.9](https://
 
 ## Sources et Xcode
 
-L’archive **Sora-0.3.0-sources.zip**, disponible dans la release correspondante, contient les sources et les correctifs de Sora, le projet `Sora.xcodeproj` et les instructions `SORA.md`. Elle constitue la référence correspondant au binaire distribué. Le moteur Gecko est récupéré depuis la révision indiquée dans ces sources ; il n’est pas fourni dans le ZIP de l’application.
+L’archive **Sora-0.3.0.1-sources.zip**, disponible dans la release correspondante, contient les sources et les correctifs de Sora, le projet `Sora.xcodeproj` et les instructions `SORA.md`. Elle constitue la référence correspondant au binaire distribué. Le moteur Gecko est récupéré depuis la révision indiquée dans ces sources ; il n’est pas fourni dans le ZIP de l’application.
 
 Le projet Xcode propose des schémas distincts pour Intel et Apple Silicon et délègue la compilation aux outils Zen/Gecko. Les clés privées de signature, les profils de navigation et les caches de compilation ne font jamais partie des sources publiées.
 

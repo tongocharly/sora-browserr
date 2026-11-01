@@ -1,5 +1,10 @@
 # Nouveautés de Sora
 
+## 0.3.0.1 — Bêta
+
+- Commande `/` placée après la loupe dans la recherche.
+- Choix de langue de traduction sans roue dentée parasite, texte mieux espacé et flèche pour afficher l’original.
+
 ## 0.3.0 — Bêta
 
 - Traduction locale et progressive dans la page, sans bandeau.
