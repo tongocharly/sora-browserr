@@ -1,5 +1,11 @@
 # Nouveautés de Sora
 
+## 0.3.0.2 — Bêta
+
+- Correction de la boucle d’initialisation qui bloquait la traduction.
+- Suivi de l’état de traduction sans recréer le moteur ; notifications périmées ignorées.
+- Suppression des lignes sans libellé dans le menu de clic droit.
+
 ## 0.3.0.1 — Bêta
 
 - Commande `/` placée après la loupe dans la recherche.
