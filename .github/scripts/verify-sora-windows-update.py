@@ -148,6 +148,8 @@ def main():
     process = None
     observed = []
     report = {'targetVersion': version, 'targetBuildID': build, 'signatureBypass': False, 'insecureCertificateAcceptance': False}
+    # Enable privileged automation only inside this disposable CI process.
+    os.environ['MOZ_REMOTE_ALLOW_SYSTEM_ACCESS'] = '1'
     # Query the actual native checker in a fresh, policy-free target installation.
     probe_profile = args.output / 'production-feed-profile'
     probe_profile.mkdir()
