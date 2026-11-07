@@ -6,7 +6,7 @@
 
 **Sora THE Browser to replace Arc** · En développement
 
-Un navigateur pour macOS, construit sur Zen et Gecko, avec des espaces pour organiser ses onglets et une interface qui laisse la place au Web.
+Un navigateur pour macOS et Windows, construit sur Zen et Gecko, avec des espaces pour organiser ses onglets et une interface qui laisse la place au Web.
 
 [Dernière version](https://github.com/tongocharly/sora-browserr/releases/latest) · [Nouveautés](Changelog) · [Signaler un problème](https://github.com/tongocharly/sora-browserr/issues)
 
@@ -43,6 +43,17 @@ Depuis Sora 0.2.9 ou une version ultérieure : **Réglages → À propos → Rec
 Pour une première installation, l’installateur macOS de [Sora 0.2.9](https://github.com/tongocharly/sora-browserr/releases/tag/v0.2.9) permet ensuite de recevoir les mises à jour en ligne. Les paquets de mise à jour et leur catalogue sont signés. La version 0.3 ne remplace pas les fichiers des releases 0.2.9 et 0.2.9.1.
 
 **Version d’essai signée Apple Development, non notariée.** Les protections de macOS peuvent empêcher son ouverture sur un autre Mac. Sora reste en bêta.
+
+## Windows — première bêta x64
+
+- [Télécharger l’installateur Windows](https://github.com/tongocharly/sora-browserr/releases/download/v0.3.1/Sora-0.3.1-windows-x64-setup.exe)
+- [Télécharger la version portable ZIP](https://github.com/tongocharly/sora-browserr/releases/download/v0.3.1/Sora-0.3.1-windows-x64.zip)
+
+Version Intel/AMD 64 bits destinée à Windows 11 et proposée pour les essais sous Windows 10. Elle partage l’interface et les sources de Sora ; les éléments propres à macOS sont adaptés à Windows. Le moteur Windows est Gecko **159.0.1**. Le français et l’anglais sont inclus.
+
+Les mises à jour Windows utilisent le gestionnaire natif de Gecko et des paquets signés par Sora. Le catalogue Windows et le catalogue macOS sont distincts, dans les mêmes releases. L’installateur Windows ne possède pas encore de signature Authenticode ; cette première version reste une bêta à tester sur un PC réel.
+
+Les sources Windows sont dans **Sora-0.3.1-windows-sources-final.zip**. Les contrôles automatisés sont disponibles dans [Verify Sora Windows Release](https://github.com/tongocharly/sora-browserr/actions/workflows/sora-windows-verify.yml).
 
 ## Sources et Xcode
 
