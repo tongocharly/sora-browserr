@@ -42,7 +42,7 @@ jobs:
           p=Path('scripts/sora-build-windows.sh')
           p.write_text(p.read_text().replace('export MOZ_AUTOMATION=1', 'unset MOZ_AUTOMATION').replace('    ./mach package\n','').replace('python3 scripts/sora-windows-prepare.py collect', '(cd engine && ./mach python ../scripts/sora-windows-prepare.py collect)'))
           p=Path('configs/windows/mozconfig')
-          p.write_text(p.read_text().replace('export MOZ_STUB_INSTALLER=1', 'export MOZ_STUB_INSTALLER=')+'\nexport MOZ_APP_VENDOR="Kiro Corporation"\nexport MOZ_APP_PROFILE="Sora"\n')
+          p.write_text(p.read_text().replace('export MOZ_STUB_INSTALLER=1', 'export MOZ_STUB_INSTALLER=')+'\nexport MOZ_APP_VENDOR="Kiro Corporation"\nexport MOZ_APP_PROFILE="sora-zen"\n')
           replacements={
             'sur votre Mac':'sur votre ordinateur', 'on your Mac':'on your computer',
             'sur ce Mac':'sur cet ordinateur', 'on this Mac':'on this computer',
