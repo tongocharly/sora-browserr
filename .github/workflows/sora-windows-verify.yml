@@ -6,8 +6,13 @@ on:
         description: Sora version whose Windows packages are prepared
         required: true
         default: '0.3.1'
+      baseline_run_id:
+        description: Optional older Sora build run for automatic-update verification
+        required: false
+        default: '42372362204'
 permissions:
   contents: read
+  actions: read
 jobs:
   verify:
     runs-on: windows-2025
@@ -15,6 +20,15 @@ jobs:
     env:
       SORA_VERSION: ${{ inputs.version }}
     steps:
+      - uses: actions/checkout@v4
+      - name: Get the older internal test build
+        if: inputs.baseline_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: Sora-${{ inputs.version }}-windows-cross-build
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.baseline_run_id }}
+          path: C:\sora-baseline
       - name: Get and verify prepared Windows packages
         shell: pwsh
         run: |
@@ -82,6 +96,16 @@ jobs:
           $p = Start-Process C:\sora-check\portable\sora\sora.exe -ArgumentList '--headless --no-remote --profile C:\sora-check\profile --screenshot C:\sora-check\UPDATED-SORA.png https://example.com/' -PassThru
           if (-not $p.WaitForExit(120000)) { $p.Kill(); throw 'Updated Sora startup timed out' }
           if ($p.ExitCode -ne 0 -or -not (Test-Path C:\sora-check\UPDATED-SORA.png)) { throw 'Updated Sora could not render a page' }
+      - name: Verify automatic checking, signed downloading and restart from an older build
+        if: inputs.baseline_run_id != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $oldZip = @(Get-ChildItem C:\sora-baseline -Recurse -Filter "Sora-${env:SORA_VERSION}-windows-x64.zip")
+          if ($oldZip.Count -ne 1) { throw 'Older internal app package missing or ambiguous' }
+          Expand-Archive $oldZip[0].FullName C:\sora-check\baseline
+          python .github\scripts\verify-sora-windows-update.py --baseline C:\sora-check\baseline\sora --target C:\sora-check\portable\sora --mar "C:\sora-check\Sora-${env:SORA_VERSION}-windows-x64.mar" --output C:\sora-check\automatic
+          if ($LASTEXITCODE -ne 0) { throw 'Automatic-update integration check failed' }
       - name: Save verification evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -92,3 +116,6 @@ jobs:
             C:\sora-check\*.log
             C:\sora-check\*.png
             C:\sora-check\update\update.log
+            C:\sora-check\automatic\*.json
+            C:\sora-check\automatic\*.png
+            C:\sora-check\automatic\*.log
