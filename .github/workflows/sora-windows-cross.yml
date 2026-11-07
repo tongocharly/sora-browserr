@@ -64,6 +64,10 @@ jobs:
           python3 scripts/sora-windows-prepare.py download
           npm run download
           npm run import
+          # Source archives have a fresh Gecko repository without a commit.
+          git -C engine -c user.name='Sora Build' -c user.email='build@sora.invalid' commit --allow-empty -m 'Verified Gecko source checkpoint'
+          # The update archive tool runs on the Linux build host.
+          sed -i 's@dist/host/bin/mar.exe@dist/host/bin/mar@g' scripts/sora-build-windows.sh
           python3 scripts/update_en_US_packs.py
           python3 scripts/prepare-sora-locales.py
           python3 scripts/sora-windows-prepare.py configure
