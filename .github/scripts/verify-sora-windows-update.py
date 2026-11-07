@@ -141,6 +141,9 @@ def main():
         'zen.welcome-screen.seen': True, 'browser.shell.checkDefaultBrowser': False,
         'marionette.enabled': True, 'marionette.port': port,
         'app.update.log': True, 'sora.updates.last-check': '0',
+        # Marionette normally disables updates for unrelated browser tests.
+        # This isolated profile specifically exercises the signed updater.
+        'app.update.disabledForTesting': False,
         'intl.locale.requested': 'fr,en-US',
     }
     (profile / 'user.js').write_text(''.join(f'user_pref({json.dumps(k)}, {json.dumps(v)});\n' for k, v in preferences.items()))
