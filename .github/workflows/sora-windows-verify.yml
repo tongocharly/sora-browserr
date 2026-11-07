@@ -76,9 +76,11 @@ jobs:
           try { $null=$f.Seek(-1,[IO.SeekOrigin]::End); $byte=$f.ReadByte(); $null=$f.Seek(-1,[IO.SeekOrigin]::End); $f.WriteByte([byte]($byte -bxor 1)) } finally { $f.Dispose() }
           function Apply-TestUpdate {
             'pending' | Set-Content "$update\update.status" -Encoding ascii
-            $p = Start-Process "$update\updater.exe" -ArgumentList "$update $app $app 0" -WorkingDirectory $update -PassThru
+            $p = Start-Process "$update\updater.exe" -ArgumentList "3 $update $app $app first 0" -WorkingDirectory $update -PassThru
             if (-not $p.WaitForExit(180000)) { $p.Kill(); throw 'Update timeout' }
-            return (Get-Content "$update\update.status" -Raw).Trim()
+            $status = (Get-Content "$update\update.status" -Raw).Trim()
+            "Updater exit: $($p.ExitCode); status: $status" | Write-Host
+            return $status
           }
           $rejected = Apply-TestUpdate
           if ($rejected -notmatch '^failed' -or (Get-FileHash $omni -Algorithm SHA256).Hash -ne $corrupt) { throw "Tampered update was not safely rejected: $rejected" }
