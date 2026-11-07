@@ -16,7 +16,13 @@ Un navigateur pour macOS, construit sur Zen et Gecko, avec des espaces pour orga
 
 *Une capture réelle de Sora. Les données affichées proviennent d’une session de démonstration.*
 
-## Sora 0.3
+## Sora 0.3.1
+
+- **`/Lens`** ouvre directement la recherche par image Google Lens, même si votre moteur habituel est Bing ou un autre moteur.
+- **Nouvelle configuration de Sora.** Accueil, import Chrome/Edge/Firefox, connexions Google/Microsoft, thèmes, menu rétracté, favoris et confidentialité. Les utilisateurs déjà configurés peuvent la rouvrir depuis les réglages.
+- **Thèmes ajustables.** Le curseur de transparence reste fonctionnel pour les couleurs choisies dans la configuration.
+
+## Versions précédentes
 
 Le correctif **0.3.0.2** rétablit la traduction en corrigeant une boucle d’initialisation et évite les lignes sans libellé dans le menu de clic droit.
 
@@ -40,7 +46,7 @@ Pour une première installation, l’installateur macOS de [Sora 0.2.9](https://
 
 ## Sources et Xcode
 
-L’archive **Sora-0.3.0.2-sources.zip**, disponible dans la release correspondante, contient les sources et les correctifs de Sora, le projet `Sora.xcodeproj` et les instructions `SORA.md`. Elle constitue la référence correspondant au binaire distribué. Le moteur Gecko est récupéré depuis la révision indiquée dans ces sources ; il n’est pas fourni dans le ZIP de l’application.
+L’archive **Sora-0.3.1-sources.zip**, disponible dans la release correspondante, contient les sources et les correctifs de Sora, le projet `Sora.xcodeproj` et les instructions `SORA.md`. Elle constitue la référence correspondant au binaire distribué. Le moteur Gecko est récupéré depuis la révision indiquée dans ces sources ; il n’est pas fourni dans le ZIP de l’application.
 
 Le projet Xcode propose des schémas distincts pour Intel et Apple Silicon et délègue la compilation aux outils Zen/Gecko. Les clés privées de signature, les profils de navigation et les caches de compilation ne font jamais partie des sources publiées.
 
