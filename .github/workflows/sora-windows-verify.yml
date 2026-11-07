@@ -5,11 +5,15 @@ on:
       version:
         description: Sora version whose Windows packages are prepared
         required: true
-        default: '0.3.1'
+        default: '0.3.1.1'
+      verify_installer:
+        description: Also verify the full installer (not required for an update-only release)
+        type: boolean
+        default: false
       baseline_run_id:
         description: Optional older Sora build run for automatic-update verification
         required: false
-        default: '42372362204'
+        default: '42374078208'
 permissions:
   contents: read
   actions: read
@@ -25,7 +29,7 @@ jobs:
         if: inputs.baseline_run_id != ''
         uses: actions/download-artifact@v4
         with:
-          name: Sora-${{ inputs.version }}-windows-cross-build
+          name: Sora-0.3.1-windows-cross-build
           github-token: ${{ github.token }}
           run-id: ${{ inputs.baseline_run_id }}
           path: C:\sora-baseline
@@ -38,7 +42,9 @@ jobs:
           $base = "https://github.com/tongocharly/sora-browserr/releases/download/v$env:SORA_VERSION/"
           Invoke-WebRequest ($base + 'SHA256SUMS-Windows.txt') -OutFile C:\sora-check\SHA256SUMS-Windows.txt
           $checksums = Get-Content C:\sora-check\SHA256SUMS-Windows.txt
-          foreach ($suffix in @('windows-x64.zip','windows-x64-setup.exe','windows-x64.mar')) {
+          $suffixes = @('windows-x64.zip','windows-x64.mar')
+          if ('${{ inputs.verify_installer }}' -eq 'true') { $suffixes += 'windows-x64-setup.exe' }
+          foreach ($suffix in $suffixes) {
             $name = "Sora-${env:SORA_VERSION}-$suffix"
             $line = @($checksums | Where-Object { $_ -match ('^[a-f0-9]{64}  ' + [regex]::Escape($name) + '$') })
             if ($line.Count -ne 1) { throw "Missing checksum: $name" }
@@ -47,6 +53,7 @@ jobs:
           }
           Expand-Archive "C:\sora-check\Sora-${env:SORA_VERSION}-windows-x64.zip" C:\sora-check\portable
       - name: Verify the complete installer
+        if: inputs.verify_installer
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -103,9 +110,9 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $oldZip = @(Get-ChildItem C:\sora-baseline -Recurse -Filter "Sora-${env:SORA_VERSION}-windows-x64.zip")
+          $oldZip = @(Get-ChildItem C:\sora-baseline -Recurse -Filter "Sora-0.3.1-windows-x64.zip")
           if ($oldZip.Count -eq 0) {
-            $oldZip = @(Get-ChildItem C:\sora-baseline -Recurse -Filter "sora-${env:SORA_VERSION}*.win64.zip" | Sort-Object Name -Descending | Select-Object -First 1)
+            $oldZip = @(Get-ChildItem C:\sora-baseline -Recurse -Filter "sora-0.3.1*.win64.zip" | Sort-Object Name -Descending | Select-Object -First 1)
           }
           if ($oldZip.Count -ne 1) { throw 'Older internal app package missing or ambiguous' }
           Expand-Archive $oldZip[0].FullName C:\sora-check\baseline
