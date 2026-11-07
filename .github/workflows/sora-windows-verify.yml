@@ -1,0 +1,94 @@
+name: Verify Sora Windows Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Sora version whose Windows packages are prepared
+        required: true
+        default: '0.3.1'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    env:
+      SORA_VERSION: ${{ inputs.version }}
+    steps:
+      - name: Get and verify prepared Windows packages
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:SORA_VERSION -notmatch '^0\.\d+\.\d+(\.\d+)?$') { throw 'Invalid version' }
+          New-Item -ItemType Directory C:\sora-check -Force | Out-Null
+          $base = "https://github.com/tongocharly/sora-browserr/releases/download/v$env:SORA_VERSION/"
+          Invoke-WebRequest ($base + 'SHA256SUMS-Windows.txt') -OutFile C:\sora-check\SHA256SUMS-Windows.txt
+          $checksums = Get-Content C:\sora-check\SHA256SUMS-Windows.txt
+          foreach ($suffix in @('windows-x64.zip','windows-x64-setup.exe','windows-x64.mar')) {
+            $name = "Sora-${env:SORA_VERSION}-$suffix"
+            $line = @($checksums | Where-Object { $_ -match ('^[a-f0-9]{64}  ' + [regex]::Escape($name) + '$') })
+            if ($line.Count -ne 1) { throw "Missing checksum: $name" }
+            Invoke-WebRequest ($base + $name) -OutFile "C:\sora-check\$name"
+            if ((Get-FileHash "C:\sora-check\$name" -Algorithm SHA256).Hash.ToLower() -ne $line[0].Substring(0,64)) { throw "Wrong checksum: $name" }
+          }
+          Expand-Archive "C:\sora-check\Sora-${env:SORA_VERSION}-windows-x64.zip" C:\sora-check\portable
+      - name: Verify the complete installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = "C:\sora-check\Sora-${env:SORA_VERSION}-windows-x64-setup.exe"
+          $p = Start-Process $setup -ArgumentList '/S /D=C:\sora-check\installed' -PassThru
+          if (-not $p.WaitForExit(180000)) { $p.Kill(); throw 'Installer timeout' }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path C:\sora-check\installed\sora.exe)) { throw 'Installer failed' }
+          $version = & C:\sora-check\installed\sora.exe --version
+          if ($version -notmatch ('Sora ' + [regex]::Escape($env:SORA_VERSION))) { throw "Incorrect installed version: $version" }
+          'Complete Windows installer passed' | Set-Content C:\sora-check\INSTALLER-VERIFIED.txt
+      - name: Verify the signed update and reject a tampered update
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $app = 'C:\sora-check\portable\sora'
+          $update = 'C:\sora-check\update'
+          New-Item -ItemType Directory $update -Force | Out-Null
+          Copy-Item "$app\updater.exe" $update
+          Copy-Item "$app\updater.ini" $update
+          $omni = "$app\browser\omni.ja"
+          $expected = (Get-FileHash $omni -Algorithm SHA256).Hash
+          'Intentional corruption in disposable test installation' | Set-Content $omni -Encoding ascii
+          $corrupt = (Get-FileHash $omni -Algorithm SHA256).Hash
+          $mar = "C:\sora-check\Sora-${env:SORA_VERSION}-windows-x64.mar"
+          Copy-Item $mar "$update\update.mar"
+          $f = [IO.File]::Open("$update\update.mar", [IO.FileMode]::Open, [IO.FileAccess]::ReadWrite)
+          try { $null=$f.Seek(-1,[IO.SeekOrigin]::End); $byte=$f.ReadByte(); $null=$f.Seek(-1,[IO.SeekOrigin]::End); $f.WriteByte([byte]($byte -bxor 1)) } finally { $f.Dispose() }
+          function Apply-TestUpdate {
+            'pending' | Set-Content "$update\update.status" -Encoding ascii
+            $p = Start-Process "$update\updater.exe" -ArgumentList "$update $app $app 0" -WorkingDirectory $update -PassThru
+            if (-not $p.WaitForExit(180000)) { $p.Kill(); throw 'Update timeout' }
+            return (Get-Content "$update\update.status" -Raw).Trim()
+          }
+          $rejected = Apply-TestUpdate
+          if ($rejected -notmatch '^failed' -or (Get-FileHash $omni -Algorithm SHA256).Hash -ne $corrupt) { throw "Tampered update was not safely rejected: $rejected" }
+          Copy-Item "$update\update.log" C:\sora-check\TAMPERED-UPDATE.log
+          Copy-Item $mar "$update\update.mar" -Force
+          $installed = Apply-TestUpdate
+          if ($installed -ne 'succeeded' -or (Get-FileHash $omni -Algorithm SHA256).Hash -ne $expected) { throw "Signed update did not restore the application: $installed" }
+          'Pinned-certificate Windows updater accepted the signed MAR and rejected tampering' | Set-Content C:\sora-check\UPDATE-VERIFIED.txt
+      - name: Render a page after updating
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory C:\sora-check\profile -Force | Out-Null
+          'user_pref("zen.welcome-screen.seen", true); user_pref("browser.shell.checkDefaultBrowser", false);' | Set-Content C:\sora-check\profile\user.js
+          $p = Start-Process C:\sora-check\portable\sora\sora.exe -ArgumentList '--headless --no-remote --profile C:\sora-check\profile --screenshot C:\sora-check\UPDATED-SORA.png https://example.com/' -PassThru
+          if (-not $p.WaitForExit(120000)) { $p.Kill(); throw 'Updated Sora startup timed out' }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path C:\sora-check\UPDATED-SORA.png)) { throw 'Updated Sora could not render a page' }
+      - name: Save verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sora-${{ inputs.version }}-windows-release-verification
+          path: |
+            C:\sora-check\*.txt
+            C:\sora-check\*.log
+            C:\sora-check\*.png
+            C:\sora-check\update\update.log
