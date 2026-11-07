@@ -164,6 +164,9 @@ def main():
         probe_client = None
         try:
             probe_client = connect(port)
+            report['candidateIdentity'] = identity(probe_client)
+            if report['candidateIdentity']['version'] != version or report['candidateIdentity']['buildID'] != build:
+                raise RuntimeError('The running candidate does not have the requested native version and build identity')
             production_url = probe_client.script('''
               const done = arguments[arguments.length - 1];
               Cc['@mozilla.org/updates/update-checker;1'].getService(Ci.nsIUpdateChecker)
@@ -252,6 +255,8 @@ def main():
                 raise RuntimeError('Sora did not restart into the target build')
             if report['after']['platformVersion'] != target['Gecko']['MaxVersion'].removesuffix('.*'):
                 raise RuntimeError('The updated Gecko engine version differs from the package')
+            if report['after']['version'] != version:
+                raise RuntimeError('The updated application version differs from the signed release')
             if not {'fr','en-US'}.issubset(report['after']['locales']):
                 raise RuntimeError('The updated application lost a bundled interface language')
             try:
