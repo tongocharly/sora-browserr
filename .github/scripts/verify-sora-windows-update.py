@@ -148,6 +148,38 @@ def main():
     process = None
     observed = []
     report = {'targetVersion': version, 'targetBuildID': build, 'signatureBypass': False, 'insecureCertificateAcceptance': False}
+    # Query the actual native checker in a fresh, policy-free target installation.
+    probe_profile = args.output / 'production-feed-profile'
+    probe_profile.mkdir()
+    (probe_profile / 'user.js').write_text((profile / 'user.js').read_text())
+    with (args.output / 'PRODUCTION-FEED-browser.log').open('wb') as probe_log:
+        probe = subprocess.Popen([str(args.target / 'sora.exe'), '--no-remote', '--marionette',
+            '--remote-allow-system-access', '--profile', str(probe_profile), 'about:blank'],
+            stdout=probe_log, stderr=subprocess.STDOUT)
+        probe_client = None
+        try:
+            probe_client = connect(port)
+            production_url = probe_client.script('''
+              const done = arguments[arguments.length - 1];
+              Cc['@mozilla.org/updates/update-checker;1'].getService(Ci.nsIUpdateChecker)
+                .getUpdateURL(Ci.nsIUpdateChecker.BACKGROUND_CHECK).then(done);
+            ''', asynchronous=True)
+            report['productionUpdateURL'] = production_url
+            if production_url != 'https://github.com/tongocharly/sora-browserr/releases/latest/download/windows-x64-update.xml':
+                raise RuntimeError('The production native checker does not use the Sora feed: ' + str(production_url))
+        finally:
+            if probe_client:
+                try:
+                    probe_client.script('Services.startup.quit(Ci.nsIAppStartup.eAttemptQuit);')
+                except (OSError, EOFError, RuntimeError):
+                    pass
+                probe_client.close()
+            try:
+                probe.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                probe.kill()
+                raise RuntimeError('Production feed check could not close Sora cleanly')
+    print('Production Sora native update URL verified', flush=True)
     try:
         with (args.output / 'AUTOMATIC-UPDATE-browser.log').open('wb') as output:
             environment = dict(os.environ)
@@ -168,8 +200,9 @@ def main():
             setup = client.script('''
               const done = arguments[arguments.length - 1];
               const {SoraUpdateService} = ChromeUtils.importESModule('resource:///modules/SoraUpdateService.sys.mjs');
-              SoraUpdateService.setAutomatic(true).then(() => done({isWindows: SoraUpdateService.isWindows,
-                initialized: SoraUpdateService._initialized, updateURL: Services.prefs.getStringPref('app.update.url')}))
+              SoraUpdateService.setAutomatic(true).then(async () => done({isWindows: SoraUpdateService.isWindows,
+                initialized: SoraUpdateService._initialized, updateURL: await Cc['@mozilla.org/updates/update-checker;1']
+                  .getService(Ci.nsIUpdateChecker).getUpdateURL(Ci.nsIUpdateChecker.BACKGROUND_CHECK)}))
                 .catch(error => done({error: String(error)}));
             ''', asynchronous=True)
             report['setup'] = setup
