@@ -40,7 +40,7 @@ jobs:
           s=p.read_text().replace("['sora.exe', 'xul.dll', 'updater.exe', 'uninstall/helper.exe']", "['sora.exe', 'xul.dll', 'updater.exe']")
           p.write_text(s)
           p=Path('scripts/sora-build-windows.sh')
-          p.write_text(p.read_text().replace('export MOZ_AUTOMATION=1', 'unset MOZ_AUTOMATION'))
+          p.write_text(p.read_text().replace('export MOZ_AUTOMATION=1', 'unset MOZ_AUTOMATION').replace('    ./mach package\n','').replace('python3 scripts/sora-windows-prepare.py collect', '(cd engine && ./mach python ../scripts/sora-windows-prepare.py collect)'))
           p=Path('configs/windows/mozconfig')
           p.write_text(p.read_text().replace('export MOZ_STUB_INSTALLER=1', 'export MOZ_STUB_INSTALLER=')+'\nexport MOZ_APP_VENDOR="Kiro Corporation"\nexport MOZ_APP_PROFILE="Sora"\n')
           replacements={
