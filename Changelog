@@ -1,5 +1,18 @@
 # Nouveautés de Sora
 
+## 0.3.1 — Bêta
+
+- Nouvelle commande /Lens : ouvre directement la recherche par image Google Lens, quel que soit le moteur de recherche choisi dans Sora.
+- Nouvelle configuration au premier lancement : accueil « Bienvenue sur Sora », progression, retour et étapes facultatives, dans une interface cohérente avec Sora.
+- Import proposé depuis Google Chrome, Microsoft Edge et Firefox. Chrome et Edge utilisent le sélecteur de données natif ; Firefox fusionne les favoris dans un dossier dédié et propose l’historique récent en option, sans écraser le profil Sora.
+- Connexion facultative aux sites officiels de Google et Microsoft, sans Slack.
+- Personnalisation des couleurs d’espace, du thème système/clair/sombre, du moteur de recherche et du menu complet ou rétracté.
+- Choix de favoris à épingler, protection contre les traqueurs, restauration de session et navigateur par défaut.
+- Accueil aux dimensions précédentes, raccourcis Entrée/Esc indiqués dans les boutons, modes clair/sombre complets et fond continu. Aperçu simplifié avec favoris choisis et indicateurs d’espaces plus discrets.
+- Les couleurs choisies dans la configuration conservent une légère transparence avec le flou natif de macOS. Le bouton de création d’espace au bout du glissement reste noir et blanc.
+- Correction du curseur ondulé de transparence pour les couleurs choisies dans la configuration ; les anciennes couleurs concernées sont réparées automatiquement.
+- La configuration peut être rouverte depuis Réglages → À propos → Revoir la configuration. Elle ne s’impose pas à nouveau après une mise à jour.
+
 ## 0.3.0.2 — Bêta
 
 - Correction de la boucle d’initialisation qui bloquait la traduction.
