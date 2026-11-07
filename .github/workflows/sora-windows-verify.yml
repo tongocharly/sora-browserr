@@ -102,6 +102,9 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $oldZip = @(Get-ChildItem C:\sora-baseline -Recurse -Filter "Sora-${env:SORA_VERSION}-windows-x64.zip")
+          if ($oldZip.Count -eq 0) {
+            $oldZip = @(Get-ChildItem C:\sora-baseline -Recurse -Filter "sora-${env:SORA_VERSION}*.win64.zip" | Sort-Object Name -Descending | Select-Object -First 1)
+          }
           if ($oldZip.Count -ne 1) { throw 'Older internal app package missing or ambiguous' }
           Expand-Archive $oldZip[0].FullName C:\sora-check\baseline
           python .github\scripts\verify-sora-windows-update.py --baseline C:\sora-check\baseline\sora --target C:\sora-check\portable\sora --mar "C:\sora-check\Sora-${env:SORA_VERSION}-windows-x64.mar" --output C:\sora-check\automatic
