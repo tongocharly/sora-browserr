@@ -1,0 +1,107 @@
+name: Sora Windows
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Sora version to compile
+        required: true
+        default: '0.3.1'
+      source_suffix:
+        description: Source archive kind
+        type: choice
+        options: [windows-sources, sources]
+        default: windows-sources
+      source_sha256:
+        description: SHA256 of the reviewed source archive
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: sora-windows-${{ inputs.version }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 360
+    env:
+      HUSKY: '0'
+      USE_MINTTY: '0'
+      SORA_BUILD_JOBS: '3'
+      SOURCE_VERSION: ${{ inputs.version }}
+      SOURCE_SUFFIX: ${{ inputs.source_suffix }}
+      SOURCE_SHA256: ${{ inputs.source_sha256 }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Get verified Sora sources
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:SOURCE_VERSION -notmatch '^0\.\d+\.\d+(\.\d+)?$' -or $env:SOURCE_SHA256 -notmatch '^[a-fA-F0-9]{64}$' -or $env:SOURCE_SUFFIX -notin @('windows-sources','sources')) { throw 'Invalid source parameters' }
+          $url = "https://github.com/tongocharly/sora-browserr/releases/download/v$env:SOURCE_VERSION/Sora-$env:SOURCE_VERSION-$env:SOURCE_SUFFIX.zip"
+          Invoke-WebRequest $url -OutFile C:\sora-source.zip
+          if ((Get-FileHash C:\sora-source.zip -Algorithm SHA256).Hash -ne $env:SOURCE_SHA256) { throw 'Source checksum mismatch' }
+          Expand-Archive C:\sora-source.zip C:\sora-unpack
+          Move-Item C:\sora-unpack\Sora-project C:\sora
+          git config --global core.longpaths true
+          git config --global core.autocrlf false
+          git -C C:\sora init
+          git -C C:\sora config user.name 'Sora Build'
+          git -C C:\sora config user.email 'build@sora.invalid'
+          git -C C:\sora add .
+          git -C C:\sora commit -m 'Verified Sora source archive'
+          "MOZ_BUILD_DATE=$((Get-Date).ToUniversalTime().ToString('yyyyMMddHHmmss'))" >> $env:GITHUB_ENV
+      - name: Install official MozillaBuild
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-WebRequest https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe -OutFile C:\MozillaBuildSetup.exe
+          $p = Start-Process C:\MozillaBuildSetup.exe -ArgumentList '/S' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw 'MozillaBuild installation failed' }
+      - name: Prepare compiler and Sora
+        shell: pwsh
+        run: |
+          @'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          cd /c/sora
+          rustup toolchain install 1.95.0 --profile minimal
+          bash scripts/sora-build-windows.sh setup
+          '@ | Set-Content C:\sora\ci-setup.sh -Encoding utf8NoBOM
+          & C:\mozilla-build\start-shell.bat C:\sora\ci-setup.sh 2>&1 | Tee-Object C:\sora\setup.log
+          if ($LASTEXITCODE -ne 0) { throw 'Sora setup failed' }
+      - name: Compile Windows x64
+        shell: pwsh
+        run: |
+          @'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          cd /c/sora
+          bash scripts/sora-build-windows.sh build
+          bash scripts/sora-build-windows.sh package
+          '@ | Set-Content C:\sora\ci-build.sh -Encoding utf8NoBOM
+          & C:\mozilla-build\start-shell.bat C:\sora\ci-build.sh 2>&1 | Tee-Object C:\sora\build.log
+          if ($LASTEXITCODE -ne 0) { throw 'Sora compilation failed' }
+      - name: Smoke test the built application
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = 'C:\sora\engine\obj-sora-windows-x64\dist\sora\sora.exe'
+          $version = & $exe --version
+          if ($version -notmatch "Sora $([regex]::Escape($env:SOURCE_VERSION))") { throw "Wrong application identity: $version" }
+          New-Item -ItemType Directory C:\sora\smoke-profile -Force | Out-Null
+          'user_pref("zen.welcome-screen.seen", true); user_pref("browser.shell.checkDefaultBrowser", false); user_pref("sora.updates.automatic", false);' | Set-Content C:\sora\smoke-profile\user.js
+          $p = Start-Process $exe -ArgumentList '--headless --no-remote --profile C:\sora\smoke-profile --screenshot C:\sora\artifacts\smoke.png https://example.com/' -PassThru
+          if (-not $p.WaitForExit(120000)) { $p.Kill(); throw 'Sora startup timed out' }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path C:\sora\artifacts\smoke.png)) { throw 'Sora could not render a page' }
+      - name: Save application and build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sora-${{ inputs.version }}-windows-x64
+          retention-days: 14
+          path: |
+            C:\sora\artifacts\*
+            C:\sora\setup.log
+            C:\sora\build.log
