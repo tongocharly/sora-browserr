@@ -16,7 +16,10 @@ jobs:
       ZEN_GA_DISABLE_PGO: '1'
       ZEN_DISABLE_LTO: '1'
       CARGO_INCREMENTAL: '0'
-      MOZ_AUTOMATION: '1'
+      GIT_AUTHOR_NAME: Sora Build
+      GIT_AUTHOR_EMAIL: build@sora.invalid
+      GIT_COMMITTER_NAME: Sora Build
+      GIT_COMMITTER_EMAIL: build@sora.invalid
     steps:
       - uses: actions/setup-node@v4
         with:
@@ -36,6 +39,21 @@ jobs:
           p=Path('scripts/sora-windows-prepare.py')
           s=p.read_text().replace("['sora.exe', 'xul.dll', 'updater.exe', 'uninstall/helper.exe']", "['sora.exe', 'xul.dll', 'updater.exe']")
           p.write_text(s)
+          p=Path('scripts/sora-build-windows.sh')
+          p.write_text(p.read_text().replace('export MOZ_AUTOMATION=1', 'unset MOZ_AUTOMATION'))
+          p=Path('configs/windows/mozconfig')
+          p.write_text(p.read_text().replace('export MOZ_STUB_INSTALLER=1', 'export MOZ_STUB_INSTALLER=')+'\nexport MOZ_APP_VENDOR="Kiro Corporation"\nexport MOZ_APP_PROFILE="Sora"\n')
+          replacements={
+            'sur votre Mac':'sur votre ordinateur', 'on your Mac':'on your computer',
+            'sur ce Mac':'sur cet ordinateur', 'on this Mac':'on this computer',
+            'to this Mac':'to this computer',
+            'macOS peut demander une confirmation':'Votre système peut demander une confirmation',
+            'macOS may ask you to confirm':'Your system may ask you to confirm',
+          }
+          for name in ['src/browser/components/preferences/sora-preferences.js','src/zen/welcome/ZenWelcome.mjs','src/zen/urlbar/SoraTranslations.sys.mjs']:
+            p=Path(name);s=p.read_text()
+            for old,new in replacements.items():s=s.replace(old,new)
+            p.write_text(s)
           PY
           git init
           git config user.name 'Sora Build'
@@ -69,12 +87,18 @@ jobs:
           npm run download
           npm run import
           # Source archives have a fresh Gecko repository without a commit.
-          git -C engine -c user.name='Sora Build' -c user.email='build@sora.invalid' commit --allow-empty -m 'Verified Gecko source checkpoint'
+          git -C engine commit --allow-empty --quiet -m 'Verified Gecko source checkpoint'
           # The update archive tool runs on the Linux build host.
           sed -i 's@dist/host/bin/mar.exe@dist/host/bin/mar@g' scripts/sora-build-windows.sh
           python3 scripts/update_en_US_packs.py
           python3 scripts/prepare-sora-locales.py
           python3 scripts/sora-windows-prepare.py configure
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('engine/browser/branding/sora/branding.nsi')
+          s=p.read_text().replace('https://zen-browser.app/release-notes/${AppVersion}', 'https://github.com/tongocharly/sora-browserr/releases').replace('https://zen-browser.app/download', 'https://github.com/tongocharly/sora-browserr/releases/latest').replace('https://zen-browser.app', 'https://github.com/tongocharly/sora-browserr').replace('https://github.com/zen-browser/desktop/issues', 'https://github.com/tongocharly/sora-browserr/issues')
+          p.write_text(s)
+          PY
           curl -fL --retry 3 https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/gecko.cache.level-3.toolchains.v3.linux64-wine.latest/artifacts/public/build/wine.tar.zst -o wine.tar.zst
           tar --zstd -xf wine.tar.zst -C "$HOME/win-cross"
           (cd engine && ./mach python --virtualenv build taskcluster/scripts/misc/get_vs.py build/vs/vs2026.yaml "$HOME/win-cross/vs2026")
@@ -95,6 +119,7 @@ jobs:
           printf '\nexport MOZ_WINDOWS_RS_DIR="%s/engine/windows-%s"\n' "$PWD" "$version" >> configs/windows/mozconfig
           SURFER_MOZCONFIG_ONLY=1 npm run build
           (cd engine && ./mach --no-interactive bootstrap --application-choice browser)
+          test -x "$HOME/.mozbuild/clang/bin/clang-cl"
           printf '\nexport LIB="%s"\n' "$(find "$HOME/.mozbuild/clang/lib/clang" -type d -path '*/lib/windows' | head -1)" >> configs/windows/mozconfig
       - name: Build and package Windows x64
         shell: bash
