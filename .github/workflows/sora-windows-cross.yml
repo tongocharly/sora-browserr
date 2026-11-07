@@ -1,0 +1,141 @@
+name: Sora Windows Cross
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      HUSKY: '0'
+      SURFER_PLATFORM: win32
+      SURFER_COMPAT: x86_64
+      ZEN_CROSS_COMPILING: '1'
+      ZEN_RELEASE: '1'
+      ZEN_GA_DISABLE_PGO: '1'
+      ZEN_DISABLE_LTO: '1'
+      CARGO_INCREMENTAL: '0'
+      MOZ_AUTOMATION: '1'
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Get reviewed Sora sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 https://github.com/tongocharly/sora-browserr/releases/download/v0.3.1/Sora-0.3.1-windows-sources.zip -o source.zip
+          echo '5e398bb39a13bb0ecd5a8d7c3c5ecf33aff556a2a8105c0b789c5c447f624a20  source.zip' | sha256sum -c
+          unzip -q source.zip
+          mv Sora-project sora
+          cd sora
+          # NSIS's helper may be x86 even when the browser is x64.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/sora-windows-prepare.py')
+          s=p.read_text().replace("['sora.exe', 'xul.dll', 'updater.exe', 'uninstall/helper.exe']", "['sora.exe', 'xul.dll', 'updater.exe']")
+          p.write_text(s)
+          PY
+          git init
+          git config user.name 'Sora Build'
+          git config user.email 'build@sora.invalid'
+          git add .
+          git commit -m 'Verified Sora Windows source checkpoint'
+          echo "MOZ_OBJDIR=$PWD/engine/obj-sora-windows-x64" >> "$GITHUB_ENV"
+          echo "MOZ_BUILD_DATE=$(date -u +%Y%m%d%H%M%S)" >> "$GITHUB_ENV"
+      - name: Prepare Linux build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-venv autoconf2.13 automake bison build-essential cabextract cmake flex gawk gcc-multilib libasound2-dev libcurl4-openssl-dev libdbus-1-dev libdbus-glib-1-dev libdrm-dev libgtk-3-dev libpulse-dev libx11-xcb-dev libxt-dev libbz2-dev libexpat1-dev libffi-dev libsqlite3-dev libssl-dev libtool libucl-dev libxml2-dev msitools nasm ninja-build pkg-config p7zip-full uuid-dev zlib1g-dev zip unzip xz-utils zstd lld xvfb
+          rustup toolchain install 1.95.0 --profile minimal
+          rustup target add --toolchain 1.95.0 x86_64-pc-windows-msvc
+      - name: Prepare Gecko and Windows SDK
+        shell: bash
+        working-directory: sora
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts .surfer "$HOME/win-cross"
+          printf '"sora"\n' > .surfer/dynamicConfig.brand.json
+          printf '"release"\n' > .surfer/dynamicConfig.buildMode.json
+          npm ci
+          python3 scripts/sora-windows-prepare.py download
+          npm run download
+          npm run import
+          python3 scripts/update_en_US_packs.py
+          python3 scripts/prepare-sora-locales.py
+          python3 scripts/sora-windows-prepare.py configure
+          curl -fL --retry 3 https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/gecko.cache.level-3.toolchains.v3.linux64-wine.latest/artifacts/public/build/wine.tar.zst -o wine.tar.zst
+          tar --zstd -xf wine.tar.zst -C "$HOME/win-cross"
+          (cd engine && ./mach python --virtualenv build taskcluster/scripts/misc/get_vs.py build/vs/vs2026.yaml "$HOME/win-cross/vs2026")
+          chmod -R u+x "$HOME/win-cross/vs2026"
+          version=$(cat build/windows/.windows-rs-version)
+          export WINDOWS_RS_VERSION="$version"
+          python3 - <<'PY'
+          import os,json,hashlib,urllib.request,tarfile
+          from pathlib import Path
+          v=os.environ['WINDOWS_RS_VERSION'].strip()
+          entries=urllib.request.urlopen('https://index.crates.io/wi/nd/windows').read().decode().splitlines()
+          expected=next(json.loads(e)['cksum'] for e in entries if json.loads(e)['vers']==v)
+          data=urllib.request.urlopen(f'https://static.crates.io/crates/windows/windows-{v}.crate').read()
+          assert hashlib.sha256(data).hexdigest()==expected
+          p=Path('windows.crate');p.write_bytes(data)
+          with tarfile.open(p) as a:a.extractall('engine',filter='data')
+          PY
+          printf '\nexport MOZ_WINDOWS_RS_DIR="%s/engine/windows-%s"\n' "$PWD" "$version" >> configs/windows/mozconfig
+          SURFER_MOZCONFIG_ONLY=1 npm run build
+          (cd engine && ./mach --no-interactive bootstrap --application-choice browser)
+          printf '\nexport LIB="%s"\n' "$(find "$HOME/.mozbuild/clang/lib/clang" -type d -path '*/lib/windows' | head -1)" >> configs/windows/mozconfig
+      - name: Build and package Windows x64
+        shell: bash
+        working-directory: sora
+        run: |
+          set -euo pipefail
+          npm run build -- --jobs 3 2>&1 | tee build.log
+          bash scripts/sora-build-windows.sh package 2>&1 | tee package.log
+      - name: Save build results and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sora-0.3.1-windows-cross-build
+          retention-days: 14
+          path: |
+            sora/artifacts/*
+            sora/build.log
+            sora/package.log
+            sora/engine/obj-sora-windows-x64/dist/*.zip
+            sora/engine/obj-sora-windows-x64/dist/*.installer.exe
+            sora/engine/obj-sora-windows-x64/dist/update/*.mar
+  validate:
+    needs: build
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Sora-0.3.1-windows-cross-build
+          path: C:\sora-artifacts
+      - name: Verify Windows startup and rendering
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = Get-ChildItem C:\sora-artifacts -Recurse -Filter 'Sora-0.3.1-windows-x64.zip' | Select-Object -First 1
+          if (-not $zip) { throw 'Packaged Windows application missing' }
+          Expand-Archive $zip.FullName C:\sora-test
+          $exe = 'C:\sora-test\sora\sora.exe'
+          $version = & $exe --version
+          if ($version -notmatch 'Sora 0\.3\.1') { throw "Incorrect identity: $version" }
+          New-Item -ItemType Directory C:\sora-profile -Force | Out-Null
+          'user_pref("zen.welcome-screen.seen", true); user_pref("browser.shell.checkDefaultBrowser", false);' | Set-Content C:\sora-profile\user.js
+          $p = Start-Process $exe -ArgumentList '--headless --no-remote --profile C:\sora-profile --screenshot C:\sora-artifacts\smoke.png https://example.com/' -PassThru
+          if (-not $p.WaitForExit(120000)) { $p.Kill(); throw 'Sora startup timed out' }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path C:\sora-artifacts\smoke.png)) { throw 'Windows rendering failed' }
+          'Windows native launch and rendering passed' | Set-Content C:\sora-artifacts\WINDOWS-SMOKE.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Sora-0.3.1-windows-validation
+          retention-days: 14
+          path: C:\sora-artifacts
