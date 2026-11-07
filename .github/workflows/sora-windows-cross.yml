@@ -36,8 +36,13 @@ jobs:
           # NSIS's helper may be x86 even when the browser is x64.
           python3 - <<'PY'
           from pathlib import Path
+          import json
+          p=Path('surfer.json');config=json.loads(p.read_text())
+          config['version']['version']='159.0.1';config['version']['candidate']='159.0.1'
+          p.write_text(json.dumps(config,indent=2)+'\n')
           p=Path('scripts/sora-windows-prepare.py')
           s=p.read_text().replace("['sora.exe', 'xul.dll', 'updater.exe', 'uninstall/helper.exe']", "['sora.exe', 'xul.dll', 'updater.exe']")
+          s=s.replace('669241f3fc672d8240ddc4158b6125e5c2566bd0013a0a96a3874ee17bf0d9b3d91c842e653cb35eab0921829ce3660e9d795900b3c3a5488cd6020f85a0aac3','e7375c0c18361b22fa1d2e6fd5f6a4ff20b22e7090a64bf32d7ef79edb0a649983439b8e6e80106fe51bb96699bdd3096c921fe198d1b460193a66d6d8f227a4').replace("'159.0'", "'159.0.1'").replace('firefox-159.0.source', 'firefox-159.0.1.source').replace('/159.0/source/', '/159.0.1/source/')
           p.write_text(s)
           p=Path('scripts/sora-build-windows.sh')
           p.write_text(p.read_text().replace('export MOZ_AUTOMATION=1', 'unset MOZ_AUTOMATION').replace('    ./mach package\n','').replace('python3 scripts/sora-windows-prepare.py collect', '(cd engine && ./mach python ../scripts/sora-windows-prepare.py collect)'))
