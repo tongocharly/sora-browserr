@@ -1,6 +1,15 @@
 name: Sora Windows Cross
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: Sora source release version
+        required: true
+        default: '0.3.1.2'
+      source_sha256:
+        description: SHA256 of the reviewed source ZIP
+        required: true
+        type: string
 permissions:
   contents: read
 jobs:
@@ -26,28 +35,22 @@ jobs:
           node-version: '22'
       - name: Get reviewed Sora sources
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SORA_VERSION: ${{ inputs.version }}
+          SORA_SOURCE_SHA256: ${{ inputs.source_sha256 }}
         run: |
           set -euo pipefail
-          curl -fL --retry 3 https://github.com/tongocharly/sora-browserr/releases/download/v0.3.1/Sora-0.3.1-windows-sources.zip -o source.zip
-          echo '5e398bb39a13bb0ecd5a8d7c3c5ecf33aff556a2a8105c0b789c5c447f624a20  source.zip' | sha256sum -c
+          [[ "$SORA_VERSION" =~ ^0\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
+          [[ "$SORA_SOURCE_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          gh release download "v$SORA_VERSION" --pattern "Sora-$SORA_VERSION-sources.zip" --repo tongocharly/sora-browserr
+          mv "Sora-$SORA_VERSION-sources.zip" source.zip
+          echo "$SORA_SOURCE_SHA256  source.zip" | sha256sum -c
           unzip -q source.zip
           mv Sora-project sora
           cd sora
-          # NSIS's helper may be x86 even when the browser is x64.
-          python3 - <<'PY'
+          python3 - <<'PYCODE'
           from pathlib import Path
-          import json
-          p=Path('surfer.json');config=json.loads(p.read_text())
-          config['version']['version']='159.0.1';config['version']['candidate']='159.0.1'
-          p.write_text(json.dumps(config,indent=2)+'\n')
-          p=Path('scripts/sora-windows-prepare.py')
-          s=p.read_text().replace("['sora.exe', 'xul.dll', 'updater.exe', 'uninstall/helper.exe']", "['sora.exe', 'xul.dll', 'updater.exe']")
-          s=s.replace('669241f3fc672d8240ddc4158b6125e5c2566bd0013a0a96a3874ee17bf0d9b3d91c842e653cb35eab0921829ce3660e9d795900b3c3a5488cd6020f85a0aac3','e7375c0c18361b22fa1d2e6fd5f6a4ff20b22e7090a64bf32d7ef79edb0a649983439b8e6e80106fe51bb96699bdd3096c921fe198d1b460193a66d6d8f227a4').replace("'159.0'", "'159.0.1'").replace('firefox-159.0.source', 'firefox-159.0.1.source').replace('/159.0/source/', '/159.0.1/source/')
-          p.write_text(s)
-          p=Path('scripts/sora-build-windows.sh')
-          p.write_text(p.read_text().replace('export MOZ_AUTOMATION=1', 'unset MOZ_AUTOMATION').replace('    ./mach package\n','').replace('python3 scripts/sora-windows-prepare.py collect', '(cd engine && ./mach python ../scripts/sora-windows-prepare.py collect)'))
-          p=Path('configs/windows/mozconfig')
-          p.write_text(p.read_text().replace('export MOZ_STUB_INSTALLER=1', 'export MOZ_STUB_INSTALLER=')+'\nexport MOZ_APP_VENDOR="Kiro Corporation"\nexport MOZ_APP_PROFILE="sora-zen"\n')
           replacements={
             'sur votre Mac':'sur votre ordinateur', 'on your Mac':'on your computer',
             'sur ce Mac':'sur cet ordinateur', 'on this Mac':'on this computer',
@@ -59,7 +62,7 @@ jobs:
             p=Path(name);s=p.read_text()
             for old,new in replacements.items():s=s.replace(old,new)
             p.write_text(s)
-          PY
+          PYCODE
           git init
           git config user.name 'Sora Build'
           git config user.email 'build@sora.invalid'
@@ -137,7 +140,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Sora-0.3.1-windows-cross-build
+          name: Sora-${{ inputs.version }}-windows-cross-build
           retention-days: 14
           path: |
             sora/artifacts/*
@@ -153,18 +156,20 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: Sora-0.3.1-windows-cross-build
+          name: Sora-${{ inputs.version }}-windows-cross-build
           path: C:\sora-artifacts
       - name: Verify Windows startup and rendering
         shell: pwsh
+        env:
+          SORA_VERSION: ${{ inputs.version }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $zip = Get-ChildItem C:\sora-artifacts -Recurse -Filter 'Sora-0.3.1-windows-x64.zip' | Select-Object -First 1
+          $zip = Get-ChildItem C:\sora-artifacts -Recurse -Filter "Sora-$env:SORA_VERSION-windows-x64.zip" | Select-Object -First 1
           if (-not $zip) { throw 'Packaged Windows application missing' }
           Expand-Archive $zip.FullName C:\sora-test
           $exe = 'C:\sora-test\sora\sora.exe'
           $version = & $exe --version
-          if ($version -notmatch 'Sora 0\.3\.1') { throw "Incorrect identity: $version" }
+          if (-not $version.Contains("Sora $env:SORA_VERSION")) { throw "Incorrect identity: $version" }
           New-Item -ItemType Directory C:\sora-profile -Force | Out-Null
           'user_pref("zen.welcome-screen.seen", true); user_pref("browser.shell.checkDefaultBrowser", false);' | Set-Content C:\sora-profile\user.js
           $p = Start-Process $exe -ArgumentList '--headless --no-remote --profile C:\sora-profile --screenshot C:\sora-artifacts\smoke.png https://example.com/' -PassThru
@@ -174,6 +179,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Sora-0.3.1-windows-validation
+          name: Sora-${{ inputs.version }}-windows-validation
           retention-days: 14
           path: C:\sora-artifacts
