@@ -6,6 +6,10 @@ on:
         description: Sora source release version
         required: true
         default: '0.3.1.2'
+      source_release:
+        description: Release tag containing reviewed sources (optional)
+        required: false
+        type: string
       source_sha256:
         description: SHA256 of the reviewed source ZIP
         required: true
@@ -39,11 +43,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SORA_VERSION: ${{ inputs.version }}
           SORA_SOURCE_SHA256: ${{ inputs.source_sha256 }}
+          SORA_SOURCE_RELEASE: ${{ inputs.source_release }}
         run: |
           set -euo pipefail
           [[ "$SORA_VERSION" =~ ^0\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
           [[ "$SORA_SOURCE_SHA256" =~ ^[a-f0-9]{64}$ ]]
-          gh release download "v$SORA_VERSION" --pattern "Sora-$SORA_VERSION-sources.zip" --repo tongocharly/sora-browserr
+          source_tag="${SORA_SOURCE_RELEASE:-v$SORA_VERSION}"
+          [[ "$source_tag" =~ ^v0\.[0-9]+\.[0-9]+(\.[0-9]+)?(-build-inputs)?$ ]]
+          gh release download "$source_tag" --pattern "Sora-$SORA_VERSION-sources.zip" --repo tongocharly/sora-browserr
           mv "Sora-$SORA_VERSION-sources.zip" source.zip
           echo "$SORA_SOURCE_SHA256  source.zip" | sha256sum -c
           unzip -q source.zip
@@ -94,6 +101,19 @@ jobs:
           python3 scripts/sora-windows-prepare.py download
           npm run download
           npm run import
+          # Older Zen profiles omit Firefox's saved-group telemetry metadata.
+          python3 - <<'PYGUARD'
+          from pathlib import Path
+          p=Path('engine/browser/components/sessionstore/SessionStartup.sys.mjs')
+          s=p.read_text()
+          before='let savedGroupsCount = initialState.savedGroups.length;'
+          after='let savedGroupsCount = initialState.savedGroups?.length ?? 0;'
+          if before in s:
+            assert s.count(before)==1
+            p.write_text(s.replace(before,after))
+          elif after not in s:
+            raise RuntimeError('Unexpected Firefox session metadata code')
+          PYGUARD
           # Source archives have a fresh Gecko repository without a commit.
           git -C engine commit --allow-empty --quiet -m 'Verified Gecko source checkpoint'
           # The update archive tool runs on the Linux build host.
